@@ -3,76 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Prioritas Tugas</title>
-    <!-- Desain menggunakan Bootstrap -->
+    <title>REMINDU: Smart Task Prioritizer</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Confetti JS untuk Gamifikasi -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background-color: #f4f7f6; padding-top: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none; }
+        .urgent { color: #dc3545; font-weight: bold; }
+        .warning { color: #fd7e14; font-weight: bold; }
+        #pomodoro-box { display: none; background: #e3f2fd; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 20px; }
+        .timer-text { font-size: 2.5rem; font-weight: bold; color: #0d6efd; }
+    </style>
 </head>
-<body style="background-color: #f4f7f6; padding-top: 30px;">
+<body>
 
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h2 class="text-center mb-4" style="color: #2c3e50;">REMINDU</h2>
-            <p class="text-center text-muted">REMINDU! Selesaikan masalah tugasmu</p>
+        <div class="col-lg-9">
+            
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <h2 style="color: #2c3e50; font-weight: 800;">🚀 REMINDU</h2>
+                <p class="text-muted mb-1">Smart Task Prioritizer untuk Produktivitas & Keseimbangan Mentalmu</p>
+                <span class="badge bg-success">SDGs 3 & 4 Supported</span>
+            </div>
+
+            <!-- Pomodoro Timer Box -->
+            <div id="pomodoro-box" class="shadow-sm">
+                <h5 id="pomodoro-title">Fokus Mengerjakan: -</h5>
+                <div class="timer-text" id="waktu-timer">25:00</div>
+                <p class="text-muted small">Singkirkan HP-mu. Fokus 25 menit, lalu istirahatlah!</p>
+                <button class="btn btn-danger btn-sm" onclick="stopPomodoro()">Hentikan Timer</button>
+            </div>
+
+            <!-- Peringatan Burnout -->
+            <div id="burnout-alert" class="alert alert-warning" style="display: none; border-left: 5px solid #ffc107;">
+                <strong>⚠️ Burnout Warning:</strong> Beban kerjamu dalam 24 jam ke depan sangat padat. Tarik napas panjang, kerjakan satu per satu dari yang paling atas, dan jangan lupa minum air putih!
+            </div>
 
             <!-- Form Input -->
-            <div class="card mb-4 p-4 shadow-sm">
+            <div class="card mb-4 p-4">
                 <form id="formTugas" onsubmit="tambahTugas(event)">
-                    <div class="row mb-3">
-                        <div class="col-md-5">
-                            <label class="form-label">Mata Kuliah</label>
-                            <input type="text" id="mk" class="form-control" required>
+                    <div class="row mb-3 align-items-end">
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <label class="form-label fw-bold">Mata Kuliah / Tugas</label>
+                            <input type="text" id="mk" class="form-control" placeholder="Cth: Jaringan Komputer" required>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Deadline</label>
+                        <div class="col-md-3 mb-2 mb-md-0">
+                            <label class="form-label fw-bold">Deadline</label>
                             <input type="date" id="dl" class="form-control" required>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">SKS</label>
+                        <div class="col-md-2 mb-2 mb-md-0">
+                            <label class="form-label fw-bold">SKS</label>
                             <input type="number" id="sks" class="form-control" min="1" max="8" value="2" required>
                         </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Tingkat Kesulitan</label>
+                            <select id="kesulitan" class="form-select">
+                                <option value="1">1 - Sangat Mudah</option>
+                                <option value="2">2 - Mudah</option>
+                                <option value="3" selected>3 - Sedang</option>
+                                <option value="4">4 - Sulit</option>
+                                <option value="5">5 - Sangat Sulit</option>
+                            </select>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">+ Tambah Tugas</button>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">+ Tambah & Analisis Prioritas</button>
                 </form>
             </div>
 
             <!-- Tabel Hasil -->
-            <div class="card p-4 shadow-sm">
-                <div class="d-flex justify-content-between mb-3">
-                    <h5 class="mb-0">Urutan Pengerjaan</h5>
-                    <button onclick="hapusSemua()" class="btn btn-sm btn-danger">Hapus Semua</button>
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 fw-bold">📊 Urutan Eksekusi Terbaik</h5>
+                    <button onclick="hapusSemua()" class="btn btn-sm btn-outline-danger">Reset Semua</button>
                 </div>
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Prioritas</th>
-                            <th>Mata Kuliah</th>
-                            <th>Deadline</th>
-                            <th>SKS</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelBody">
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">Belum ada tugas.</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Tugas</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelBody">
+                            <!-- Data akan masuk ke sini -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
+
         </div>
     </div>
 </div>
 
 <!-- Logika Aplikasi (JavaScript) -->
 <script>
-    let daftarTugas = [];
+    // Fitur Auto-Save menggunakan Local Storage
+    let daftarTugas = JSON.parse(localStorage.getItem('reminduData')) || [];
+    let intervalTimer;
+
+    // Render tabel saat web pertama kali dibuka
+    window.onload = renderTabel;
 
     function tambahTugas(event) {
-        event.preventDefault(); // Mencegah web reload
+        event.preventDefault();
 
         const mk = document.getElementById('mk').value;
         const dl = document.getElementById('dl').value;
         const sks = parseFloat(document.getElementById('sks').value);
+        const kesulitan = parseFloat(document.getElementById('kesulitan').value);
 
         // Hitung sisa hari
         const tglDeadline = new Date(dl);
@@ -81,60 +126,140 @@
         hariIni.setHours(0,0,0,0);
         const sisaHari = Math.floor((tglDeadline - hariIni) / (1000 * 3600 * 24));
         
-        // Hitung skor prioritas
+        // Algoritma Prioritas Cerdas: (SKS * Kesulitan) / Sisa Hari
         let pembagi = sisaHari <= 0 ? 0.1 : sisaHari;
-        let skorPrioritas = sks / pembagi;
+        let skorPrioritas = (sks * kesulitan) / pembagi;
 
-        daftarTugas.push({ mk: mk, deadline: dl, sks: sks, sisaHari: sisaHari, skor: skorPrioritas });
+        daftarTugas.push({ mk, deadline: dl, sisaHari, skor: skorPrioritas });
 
-        // Kosongkan form input
+        // Simpan ke Local Storage & render ulang
+        simpanData();
+        
+        // Kosongkan form (kecuali kesulitan)
         document.getElementById('mk').value = '';
         document.getElementById('dl').value = '';
+    }
 
+    function simpanData() {
+        localStorage.setItem('reminduData', JSON.stringify(daftarTugas));
         renderTabel();
+    }
+
+    function tugasSelesai(index) {
+        // Efek Confetti (Gamifikasi)
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#28a745', '#007bff', '#ffc107']
+        });
+
+        // Hapus tugas dari array
+        daftarTugas.splice(index, 1);
+        simpanData();
     }
 
     function hapusSemua() {
-        daftarTugas = [];
-        renderTabel();
+        if(confirm("Yakin ingin mereset semua tugas?")) {
+            daftarTugas = [];
+            simpanData();
+        }
     }
 
+    // --- FITUR POMODORO TIMER ---
+    function mulaiPomodoro(namaTugas) {
+        window.scrollTo(0, 0); // Scroll ke atas
+        const box = document.getElementById('pomodoro-box');
+        const title = document.getElementById('pomodoro-title');
+        const display = document.getElementById('waktu-timer');
+        
+        box.style.display = 'block';
+        title.innerText = "Fokus: " + namaTugas;
+        
+        let menit = 25;
+        let detik = 0;
+        clearInterval(intervalTimer); // Reset jika ada timer sebelumnya
+
+        intervalTimer = setInterval(() => {
+            if (detik === 0) {
+                if (menit === 0) {
+                    clearInterval(intervalTimer);
+                    display.innerText = "SELESAI!";
+                    alert("Waktu fokus 25 menit selesai! Ambil jeda 5 menit.");
+                    return;
+                }
+                menit--;
+                detik = 59;
+            } else {
+                detik--;
+            }
+            display.innerText = (menit < 10 ? "0" : "") + menit + ":" + (detik < 10 ? "0" : "") + detik;
+        }, 1000);
+    }
+
+    function stopPomodoro() {
+        clearInterval(intervalTimer);
+        document.getElementById('pomodoro-box').style.display = 'none';
+        document.getElementById('waktu-timer').innerText = "25:00";
+    }
+
+    // --- RENDER TABEL & LOGIKA BURNOUT ---
     function renderTabel() {
         const tabelBody = document.getElementById('tabelBody');
+        const burnoutAlert = document.getElementById('burnout-alert');
         tabelBody.innerHTML = ''; 
 
         if (daftarTugas.length === 0) {
-            tabelBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada tugas.</td></tr>`;
+            tabelBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Belum ada tugas. Waktunya istirahat! ☕</td></tr>`;
+            burnoutAlert.style.display = 'none';
             return;
         }
 
-        // Urutkan dari skor prioritas tertinggi
+        // Urutkan berdasarkan skor prioritas tertinggi
         daftarTugas.sort((a, b) => b.skor - a.skor);
 
+        let tugasMendesak = 0;
+
         daftarTugas.forEach((tugas, index) => {
+            // Hitung ulang sisa hari agar selalu update tiap hari web dibuka
+            const tglDl = new Date(tugas.deadline);
+            tglDl.setHours(0,0,0,0);
+            const tglSkrg = new Date();
+            tglSkrg.setHours(0,0,0,0);
+            tugas.sisaHari = Math.floor((tglDl - tglSkrg) / (1000 * 3600 * 24));
+
             let statusTeks = tugas.sisaHari + " hari lagi";
-            let warna = "black";
-            let tebal = "normal";
+            let kelasWarna = "";
 
             if (tugas.sisaHari < 0) {
-                statusTeks = "LEWAT!"; warna = "red"; tebal = "bold";
+                statusTeks = "LEWAT!"; kelasWarna = "urgent"; tugasMendesak++;
             } else if (tugas.sisaHari === 0) {
-                statusTeks = "HARI INI!"; warna = "red"; tebal = "bold";
-            } else if (tugas.sisaHari <= 3) {
-                warna = "#d39e00"; tebal = "bold";
+                statusTeks = "HARI INI!"; kelasWarna = "urgent"; tugasMendesak++;
+            } else if (tugas.sisaHari <= 2) {
+                kelasWarna = "warning"; tugasMendesak++;
             }
 
             const baris = `
                 <tr>
                     <td><strong>#${index + 1}</strong></td>
-                    <td>${tugas.mk}</td>
+                    <td class="fw-bold">${tugas.mk}</td>
                     <td>${tugas.deadline}</td>
-                    <td>${tugas.sks}</td>
-                    <td style="color: ${warna}; font-weight: ${tebal};">${statusTeks}</td>
+                    <td class="${kelasWarna}">${statusTeks}</td>
+                    <td class="text-center">
+                        <button onclick="mulaiPomodoro('${tugas.mk}')" class="btn btn-sm btn-primary me-1" title="Fokus 25 Menit">⏱️ Fokus</button>
+                        <button onclick="tugasSelesai(${index})" class="btn btn-sm btn-success" title="Tandai Selesai">✅</button>
+                    </td>
                 </tr>
             `;
             tabelBody.innerHTML += baris;
         });
+
+        // Tampilkan peringatan Burnout jika tugas mendesak (deadline besok/hari ini/lewat) lebih dari 3
+        if (tugasMendesak >= 3) {
+            burnoutAlert.style.display = 'block';
+        } else {
+            burnoutAlert.style.display = 'none';
+        }
     }
 </script>
 </body>
