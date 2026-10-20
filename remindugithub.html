@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Prioritas Tugas</title>
+    <!-- Desain menggunakan Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body style="background-color: #f4f7f6; padding-top: 30px;">
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="text-center mb-4" style="color: #2c3e50;">Sistem Prioritas Tugas</h2>
+            <p class="text-center text-muted">Aplikasi web statis - Berjalan 100% di Browser</p>
+
+            <!-- Form Input -->
+            <div class="card mb-4 p-4 shadow-sm">
+                <form id="formTugas" onsubmit="tambahTugas(event)">
+                    <div class="row mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label">Mata Kuliah</label>
+                            <input type="text" id="mk" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Deadline</label>
+                            <input type="date" id="dl" class="form-control" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">SKS</label>
+                            <input type="number" id="sks" class="form-control" min="1" max="8" value="2" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">+ Tambah Tugas</button>
+                </form>
+            </div>
+
+            <!-- Tabel Hasil -->
+            <div class="card p-4 shadow-sm">
+                <div class="d-flex justify-content-between mb-3">
+                    <h5 class="mb-0">Urutan Pengerjaan</h5>
+                    <button onclick="hapusSemua()" class="btn btn-sm btn-danger">Hapus Semua</button>
+                </div>
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Prioritas</th>
+                            <th>Mata Kuliah</th>
+                            <th>Deadline</th>
+                            <th>SKS</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelBody">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Belum ada tugas.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logika Aplikasi (JavaScript) -->
+<script>
+    let daftarTugas = [];
+
+    function tambahTugas(event) {
+        event.preventDefault(); // Mencegah web reload
+
+        const mk = document.getElementById('mk').value;
+        const dl = document.getElementById('dl').value;
+        const sks = parseFloat(document.getElementById('sks').value);
+
+        // Hitung sisa hari
+        const tglDeadline = new Date(dl);
+        tglDeadline.setHours(0,0,0,0);
+        const hariIni = new Date();
+        hariIni.setHours(0,0,0,0);
+        const sisaHari = Math.floor((tglDeadline - hariIni) / (1000 * 3600 * 24));
+        
+        // Hitung skor prioritas
+        let pembagi = sisaHari <= 0 ? 0.1 : sisaHari;
+        let skorPrioritas = sks / pembagi;
+
+        daftarTugas.push({ mk: mk, deadline: dl, sks: sks, sisaHari: sisaHari, skor: skorPrioritas });
+
+        // Kosongkan form input
+        document.getElementById('mk').value = '';
+        document.getElementById('dl').value = '';
+
+        renderTabel();
+    }
+
+    function hapusSemua() {
+        daftarTugas = [];
+        renderTabel();
+    }
+
+    function renderTabel() {
+        const tabelBody = document.getElementById('tabelBody');
+        tabelBody.innerHTML = ''; 
+
+        if (daftarTugas.length === 0) {
+            tabelBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Belum ada tugas.</td></tr>`;
+            return;
+        }
+
+        // Urutkan dari skor prioritas tertinggi
+        daftarTugas.sort((a, b) => b.skor - a.skor);
+
+        daftarTugas.forEach((tugas, index) => {
+            let statusTeks = tugas.sisaHari + " hari lagi";
+            let warna = "black";
+            let tebal = "normal";
+
+            if (tugas.sisaHari < 0) {
+                statusTeks = "LEWAT!"; warna = "red"; tebal = "bold";
+            } else if (tugas.sisaHari === 0) {
+                statusTeks = "HARI INI!"; warna = "red"; tebal = "bold";
+            } else if (tugas.sisaHari <= 3) {
+                warna = "#d39e00"; tebal = "bold";
+            }
+
+            const baris = `
+                <tr>
+                    <td><strong>#${index + 1}</strong></td>
+                    <td>${tugas.mk}</td>
+                    <td>${tugas.deadline}</td>
+                    <td>${tugas.sks}</td>
+                    <td style="color: ${warna}; font-weight: ${tebal};">${statusTeks}</td>
+                </tr>
+            `;
+            tabelBody.innerHTML += baris;
+        });
+    }
+</script>
+</body>
+</html>
